@@ -1,51 +1,52 @@
-import json
 import pickle
+import json
 import numpy as np
-import os
 
-location_data = None
-columns_data = None
-model_data = None
+__locations = None
+__data_columns = None
+__model = None
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-def get_estimated_price(location, sqft, bhk, bath):
+def get_estimated_price(location,sqft,bhk,bath):
     try:
-        loc_index = columns_data.index(location.lower())
-    except ValueError:
+        loc_index = __data_columns.index(location.lower())
+    except:
         loc_index = -1
 
-    x = np.zeros(len(columns_data))
+    x = np.zeros(len(__data_columns))
     x[0] = sqft
     x[1] = bath
     x[2] = bhk
-
-    if loc_index >= 0:
+    if loc_index>=0:
         x[loc_index] = 1
 
-    return round(model_data.predict([x])[0], 2)
-
-
-def get_location_names():
-    return location_data
+    return round(__model.predict([x])[0],2)
 
 
 def load_saved_artifacts():
-    print("Loading saved artifacts...")
+    print("loading saved artifacts...start")
+    global  __data_columns
+    global __locations
 
-    global location_data
-    global columns_data
-    global model_data
+    with open("./artifacts/columns.json", "r") as f:
+        __data_columns = json.load(f)['data_columns']
+        __locations = __data_columns[3:]
 
-    columns_path = os.path.join(BASE_DIR, "artifacts", "columns.json")
-    model_path = os.path.join(BASE_DIR, "artifacts", "prediction_model.pickle")
+    global __model
+    if __model is None:
+        with open('./artifacts/banglore_home_prices_model.pickle', 'rb') as f:
+            __model = pickle.load(f)
+    print("loading saved artifacts...done")
 
-    with open(columns_path, "r") as f:
-        columns_data = json.load(f)["data_columns"]
-        location_data = columns_data[3:]
+def get_location_names():
+    return __locations
 
-    with open(model_path, "rb") as f:
-        model_data = pickle.load(f)
+def get_data_columns():
+    return __data_columns
 
-    print("Artifacts loaded successfully!")
+if __name__ == '__main__':
+    load_saved_artifacts()
+    print(get_location_names())
+    print(get_estimated_price('1st Phase JP Nagar',1000, 3, 3))
+    print(get_estimated_price('1st Phase JP Nagar', 1000, 2, 2))
+    print(get_estimated_price('Kalhalli', 1000, 2, 2)) 
+    print(get_estimated_price('Ejipura', 1000, 2, 2))  
